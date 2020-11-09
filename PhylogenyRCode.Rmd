@@ -9,6 +9,8 @@ output: word_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+#You can now view a 2 minute video on how to complete this code: https://vimeo.com/470373338
+
 ## Introduction
 A wide array of R packages exist for analyzing and modifying phylogenies. However, these packages all assume that you have genetic data to create a tree or already have a tree made. V.PhyloMaker is one of the few packages that allows you to create a phylogeny with branch distances based on molecular data. Complete these steps before continuing on to the more advanced _ape_ and _caper_ packages.
 For more information on using V.PhyloMaker, please refer to *Jin, Y. and Qian, H. 2019. V.PhyloMaker: an R package that can generate very large phylogenies for vascular plants. – Ecography 42: 1353–1359.*
