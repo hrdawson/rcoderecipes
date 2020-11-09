@@ -57,6 +57,7 @@ Repeat the scanning process until all of your leaves are digitized. When you are
 Choose three images from your scans at random and open them in a software that can measure pixels (Photoshop and GIMP are two options). Zoom in to 100% on the first image and measure the distance of 5 cm on the scalebar in your first image. Write down the result--this is how many pixels equal 5 cm. Repeat with the other two images. Average across the three samples and record the number.
 
 ##Cropping area
+You can now watch a two minute video on how to crop your images: https://vimeo.com/471491934
 One of the most powerful packages for basic image manipulation in R is magick. ROpenSci has written a tutorial if you want to see how to use the many functions of magick (https://ropensci.org/tutorials/magick_tutorial/), but we're only going to crop the leaf scan images. To crop them, you need to know your area of interest. Open one of your leaf scans into Photoshop or GIMP. Using the measure tool, measure the width and height (in pixels) of the cropping area. Then, measure the width from the left side over to the upper left corner of your cropping area (make sure your measure tool is exactly paralell to the bottom of the image). Also measure the distance from the top edge of the image to the upper left corner of the cropping area. Record these four numbers as "width x height + distance from left + distance from top". 
 
 #Prepare digital samples for analysis
@@ -115,6 +116,8 @@ Once you are satisfied with the test crops, run the code for the entire "scans" 
 All of your resulting files will go into the "write" folder. To keep from overwriting files, you should create a new folder in "scans" called "crops". Move the cropped images out of "write" and into "crops". If you are using groups, create the same subfolders in "crops" and categorize the cropped files appropriately.
 
 #Measure area
+You can now watch a one minute video on how to measure area: https://vimeo.com/471493529
+
 You have your samples, you've digitized them and prepared the images--now you need to convert those leaves to numbers in a data frame. For this step, you need another package called LeafArea. Use the Package Manager to install it and add ''library(LeafArea)'' to the #Libraries section of your base script before loading the package. LeafArea is a super cool package that automates the ImageJ measuring process. I encourage you to read the introduction of Katabuchi (2015) or the GitHub repository README to better understand how it work: https://github.com/mattocci27/LeafArea There are details that I won't get into here that you'll need to consider for analysis and debugging of your own work, including the size of objects to ignore.
 
 ##ImageJ
