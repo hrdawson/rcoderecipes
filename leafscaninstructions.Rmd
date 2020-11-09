@@ -1,0 +1,218 @@
+---
+title: "LeafScan"
+author: "Hilary Rose Dawson"
+date: "5/30/2020"
+output: word_document
+---
+
+# Introduction
+Specific leaf area (SLA) and leaf mass per area (LMA) are metrics in the leaf economic spectrum (see Wright et al. 2001). They have the advantage of being easy to calculate, especially with the advent of computer image analysis which can quickly and accurately measure the exact size of a leaf. SLA is calculated as area/mass and LMA is the inverse, mass/area. In this tutorial, you will learn how to use R to automatically measure sampled leaves. To complete this tutorial, you will need:
+* Leaf samples, pressed flat and dried in a warm space for 24 to 48 hours
+* Envelopes for each leaf sample
+* Home scanner
+* Masking tape or a piece of paper taped to your scanner bed
+* Alcohol and lint-free cloth for cleaning the scanning bed
+* Scanning software (native to most computers)
+* Photoshop, GIMP, or another photo manipulation program with a measuring function
+* Centimeter ruler
+* ImageJ (https://imagej.nih.gov/ij/download.html)
+* R (R Studio helpful but optional)
+* Excel, or other spreadsheet editor
+
+# Sample collection
+The details of collecting your leaves will depend on your experimental design but here are some things to keep in mind.
+
+* **Replicates** How many leaves from each species, plot, site, etc. do you need for robust statistical analysis?
+* **Leaf and plant health** Choose unblemished leaves from mature, healthy plants when they are available. If you are collecting from a very large plant that may experience different lighting (like trees), collect from a consistent cardinal direction such as from the exposed south side.
+* **Petioles** The petiole is the part of the leaf that connects to the stem. Some plants (like grasses) don't have obvious petioles. Other plants (like geraniums) have very obvious petioles. Decide whether it makes sense to include the petiole or not and stay consistent with that decision.
+* **Leaf dimensions** Because you are measuring specific leaf *area*, you need to capture all the available area in a leaf. For a maple leaf, this is straightforward as long as you press it flat after picking. For a yarrow leaf, this is much more complicated because the pinnae overlap. For some overlapping leaves, you can cut the lobes apart after they are dry and as you place them on the scanning bed. Just be careful not to lose any pieces of the leaf afterwards. (Conifers and other pronounced three-dimensional leaves are a tricky case that I'm not going to go into here.)
+* **Sample labeling** Establish a labeling system before you collect your samples and stick with it throughout your datasheet. Make sure that each sample has a unique ID. I like to label my samples with the plot number, a four letter species code, then leaf replicate. For example, 002VULP003 is the third *Vulpia* leaf from plot #2. Note the two leading zeros in the plot number (this is because my highest plot was 130 and you want to have a consistent number of digits). Also, I used VULP for *Vulpia* because I only had one species of *Vulpia* in my samples. If I had two or more species, I would have taken two letters from the genus and two from the specific epithet, e.g. VUBR for *Vulpia bromoides* and VUMY for *Vulpia myuros*. You may need to use six letter codes to avoid name overlaps.
+
+For the actual collecting, I use manila coin envelopes. I write the sample label and collection date on the outside of the envelope in Sharpie. After picking a leaf, I carefully lay it flat inside the envelope. When I return to the lab from the field, I put the leaves in the drying oven at 40º to 60ºC for 48 hrs until they reach a constant weight. They are then ready for the next step, scanning.
+
+#Scan in your samples
+
+Begin the scanning process by creating a new folder on your computer called "scans". Within this folder, create a subfolder called "write". We'll use it later.
+
+If you are sampling a large number of leaves, find a logical way to break them down (by site, species, etc.). This code will work on an entire folder at once and if something fails on the 99th file, you have to do all 100 over again. It's better to work in small chunks to manage the bugs. Make subfolders for each group of leaves and save the scans appropriately.
+
+Next, designate your cropping area so that R knows where to crop your image. You can do this with masking tape or a taped down piece of colored paper. Make sure that the area is large enough to hold your biggest leaf and that there is enough space on the scanning bed outside the cropping area to hold the sample label written on your sample envelope as well as (part of) a centimeter ruler as a scale bar. 
+
+Boot up a scanning software (this is probably native to your computer or came with your scanner). Point the file path for the scan to your new scanning folder. Set the dpi (dots per inch) above the system standard--600 dpi is optimal but 300 dpi will work. Set the file to save as a JPG.
+
+Using alcohol and a lint-free cloth, wipe down both the cropping area and the white surface on the scanner lid. Make sure that no flecks or debris remain that will be scanned in. Place the centimeter ruler on the scanning bed outside the cropping area.
+
+Select your first sample. Place it in the scanning area so it rests flat with no folds. Carefully open any folded or overlapped pieces--you may have to break the leaf to do this. Don't worry about having multiple pieces of the same leaf in the cropping area but make sure that you keep track of all the pieces. 
+
+Some scanning software allow you to name your scan before taking it. If yours lets you do this, copy the name from the envelope. Regardless, place the envelope outside the scanning area so that the label on the envelope will show in the scan.
+
+Press 'Scan' and wait for the scan to complete.
+
+Make sure that the image saved and came out well. Rename the file to match the label on the envelope if you couldn't label it before scanning. Carefully collect the leaf and replace in the envelope. Always save your actual samples until your project is completely finished--you never know when you may need to rescan something.
+
+Repeat the scanning process until all of your leaves are digitized. When you are finished, go through each image to make sure the label in the image matches the filename and that all filenames end in ".jpg".
+
+#Establish baseline measurements
+##Pixels per centimeter
+Choose three images from your scans at random and open them in a software that can measure pixels (Photoshop and GIMP are two options). Zoom in to 100% on the first image and measure the distance of 5 cm on the scalebar in your first image. Write down the result--this is how many pixels equal 5 cm. Repeat with the other two images. Average across the three samples and record the number.
+
+##Cropping area
+One of the most powerful packages for basic image manipulation in R is magick. ROpenSci has written a tutorial if you want to see how to use the many functions of magick (https://ropensci.org/tutorials/magick_tutorial/), but we're only going to crop the leaf scan images. To crop them, you need to know your area of interest. Open one of your leaf scans into Photoshop or GIMP. Using the measure tool, measure the width and height (in pixels) of the cropping area. Then, measure the width from the left side over to the upper left corner of your cropping area (make sure your measure tool is exactly paralell to the bottom of the image). Also measure the distance from the top edge of the image to the upper left corner of the cropping area. Record these four numbers as "width x height + distance from left + distance from top". 
+
+#Prepare digital samples for analysis
+##Set up the project
+Open up R Studio and start a new project. Open the folder that R created for your project (you'll see the project icon sitting in this folder). Create two subfolders inside this project folder: "scripts" and "tables". Then move the folder with your scanned images into the project folder.
+
+Return to R Studio. Use the Package Manager to install magick, our first R package (Tools>Install Packages). Let R install any dependencies magick requires. Then open a new script. Save the script as "base.R" and write the following code into it
+```
+#Set the working directory to the file path of your project folder.
+setwd("/Volumes/HILARYROSE/SPA/tutorials") 
+
+#Libraries----
+library(magick)
+```
+
+Run all the code so that R knows where to look for files and loads the necessary packages. You will update the #Libraries section as you add new functions.
+
+Open a new script, saved in the "scripts" folder as "imgcrop.R". In imgcrop.R, paste the following code
+```
+imgcrop = function(folderpath, dimensions, destination){ 
+#dimensions are W x H x top corner(?) x left corner(?)
+#destination is where cropped images should go
+##I made a folder called "write"
+  list<-list.files(folderpath, pattern="*.jpg") #Only reads JPGs, this can be altered
+  name = NULL
+  image = NULL
+  for (i in list) {
+    filepath = paste(folderpath, list(i), sep = "")
+    scan = image_read(filepath)
+    name = paste(destination, "/", list(i), sep = "") #Manually create a folder called 'write' in the working directory beforehand
+    image = image_crop(scan, dimensions) #Change these dimensions depending on the area of interest
+    image_write(image, path = name, format = "jpg")}
+}
+```
+This complicated bit of script is how functions are written. As a refresher, functions are the code followed by parentheses that tell the computer how to act on an object. For example, when you told R library(magick), R knew to pull the package (which is an object) called "magick" out of its library and load it to this session. You can see that the imgcrop function (which I wrote for these analyses) comprises of all the key components a computer needs. "imgcrop" is its name and it equals a new "function" with the input between the parentheses. (The input is what you give to the computer to manipulate.) Then the curly brackets {} tell the computer what to do for each object. You don't need to understand all the parts between the curly brackets, but you do need to modify one of them: the part that says "image = image_crop()". Remember that image_crop is a function in the magick package. That function requires two inputs--the object to be cropped (the imgcrop function will tell the computer to do this for every one of your scans) and the dimensions to crop it to. Put the measurements from your own images into this section in the same format. 
+
+Once you've done that, run all the code in the imgcrop.R file. (You can put the cursor in the first line and press ctrl+enter.) You can check that the function is successfully in the environment by looking at the "Environment" tab under "Global Environment." At the bottom, you will see a list of Functions and imgcrop should now be listed there.
+
+Note that every time you restart R, you will have to rerun the imgcrop function because it isn't part of a package or the R base.
+
+Open up the folder that holds your scans. Create a new subfolder called "test" and copy three of the scanned images into that subfolder. We'll use this subfolder to debug the script before attempting all of the images.
+
+##Crop the images
+Again, open a fresh script. Save this one as "workflow.R". Write the following code into this script.
+```
+#Crop images----
+img_crop("scans\test")
+```
+
+Now the magic begins! Place your cursor in the code and press ctrl+enter (or click Run). Depending on the number of files cropped and the power of your machine, you may have to wait a little bit for the cropping. When the function is complete, the red stop sign will disappear from the upper right of the terminal.
+
+Where did the images go? Did R actually crop them? If you look back to the img_crop function in imgcrop.R, you see that img_write is sending them to "name" and name is an object that writes the filepath so that the image goes into the "write" folder you created in "scans" followed by the label you gave the sample. You can double check this by opening up the "write" folder in "scans" and looking for the cropped image. Open one of the image and check that they were cropped in the right place. If parts of the leaf are missing, use Photoshop or GIMP double-check your dimensions are correct, modify the code and try again until the crops are reliable.
+
+Once you are satisfied with the test crops, run the code for the entire "scans" folder. If you have groups within your scans (by site, species, etc.), you can replace the "test" with the appropriate subfolder. 
+
+All of your resulting files will go into the "write" folder. To keep from overwriting files, you should create a new folder in "scans" called "crops". Move the cropped images out of "write" and into "crops". If you are using groups, create the same subfolders in "crops" and categorize the cropped files appropriately.
+
+#Measure area
+You have your samples, you've digitized them and prepared the images--now you need to convert those leaves to numbers in a data frame. For this step, you need another package called LeafArea. Use the Package Manager to install it and add ''library(LeafArea)'' to the #Libraries section of your base script before loading the package. LeafArea is a super cool package that automates the ImageJ measuring process. I encourage you to read the introduction of Katabuchi (2015) or the GitHub repository README to better understand how it work: https://github.com/mattocci27/LeafArea There are details that I won't get into here that you'll need to consider for analysis and debugging of your own work, including the size of objects to ignore.
+
+##ImageJ
+First, you're going to manually measure a leaf scan using ImageJ, the workhorse behind LeafArea. If you're in a hurry (or already very familiar with ImageJ), you can skip this step but it gives you a good appreciation for the power of R and ImageJ working together.
+
+Open ImageJ and open one of your cropped images. Go to Analyze>Set Scale. In "Distance in pixels" enter how many pixels equaled 5 cm, put 5 in "Known distance", and "cm" in "Unit of distance." Check the "Global" box. Click okay. Go to Image>Adjust>Color Threshold... and make sure the box for "dark background" is checked. Click back into your image window and go to Analyze>Analyze Particles. Change the size from "0 to infinity" to "0.01 to infinity"--if you have flecks on the image that are larger than 0.01 cm^2, up this number. Check "Summarize" before clicking "Ok". ImageJ promptly tells you just how big your leaf is in the summary table. If your leaf consists of several pieces, it will measure each piece separately. Fortunately, LeafArea adds them back together for you.
+
+##LeafArea function
+It's easy to measure the area of a leaf in ImageJ but it takes so many steps that if you have hundreds of images to analyze, you're going to be working at this for some time yet. Here's where R steps in to help. Start by opening up your "crops" folder and creating a "test" subfolder. Copy three cropped images into that subfolder.
+
+In your workflow.R script, cut and paste the following
+```
+#Measure leaf area----
+leafdata = run.ij(set.directory="scans/crops/test",
+                   distance.pixel = 1181, known.distance = 5, 
+                   low.size = 0.1,
+                   save.image = TRUE)
+```
+Replace the "distance.pixel" value with your own number of how many pixels there are per five centimeters.
+Note that you're creating an object called "leafdata" by running ImageJ (run.ij()). You have set run.ij to analyze all the images in the subfolder "test" and told it that each image has X pixels/cm. The smallest object that you want it to measure is 0.1 cm^2 and you want it to save a copy of the image you analyze. 
+
+Now run the function! This may take some time depending on the size of your files and power of your machine. Wait for the little red stopsign to go away before declaring success.
+
+###Wait! I have an error message.
+The great thing about R is that anyone can write functions that are useful to the entire scientific community and publish them as per CRAN guidelines. The downside is that sometimes authors don't maintain their packages, so users have to debug them. I've found LeafArea to be a bit buggy (although this may no longer be true when you're working with it). On the upside, debugging is a great skill for any coder or code user and you can practice it here.
+
+####User errors
+Read the text of your error message. If you have a logical error message (like one that says it can't find the file you specified), doublecheck that you have written your code correctly. Look for misspelled words, missing commas, or missing parentheses. For the filepath, use the "Files" tab (View>Panes>Zoom Files) to navigate to the folder with images you want to analyze. At the top of the files tab, you will see the filepath you need to write out in the function. Remember that you've already set your working directory to the project folder so you only need to write out the folders after that. Don't put a backslash before or after the completed file path. If this doesn't fix the error, open up the target folder and make sure that there are actually JPGs sitting in it.
+
+####Package errors
+Still getting an error? Does the error message seem nonsensical and irrelevant to what's going on? When I first used LeafArea, I spent a long time trying to get it to run only to receive the error of "ImageJ not found". You can check where ImageJ should be stored by running
+```find.ij("mac")```
+with your operating system filled in ("mac", "windows" or "Linux"). If it returns an error message, you need to manually point LeafArea to ImageJ. Run the appropriate code from below.
+```
+run.ij (path.imagej = "~/Desktop/ImageJ") #Linux
+run.ij (path.imagej = "C:/Users/<username>/Desktop/ImageJ") #Windows/PC
+```
+Modify the filepath to reflect where ImageJ is stored on your computer. If you have a Mac, it doesn't matter where ImageJ is stored as long as it is correctly installed. Once you have updated the path, try rerunning the analysis code to see if your error message is gone.
+
+Is the error message persisting? So was mine. I had to dig deeper--I visited the GitHub page for the LeafArea package and started to read the code line by line to see what was different about my setup versus the expected setup. It turned out that the National Institute of Health (NIH), the organization which produces ImageJ, had made a subtle tweak to the ImageJ software. They had moved Java from "Contents/Resources/Java/ij.jar" to "Contents/Java/ij.jar". To fix the error, I went under the hood in ImageJ and put Java back into Resources. You can do the same, but note that it's not advisable to change file organization in a program--it can lead to exactly this sort of error! I only did so in ImageJ because I knew I could easily reinstall the program if something went wrong.
+
+Make sure that ImageJ is closed before doing this process. In a Mac, open up the folder called "Applications" and find ImageJ's icon. Right-click on the icon and select "Show package contents". Go into the Contents folder and move the Java subfolder into Resources.
+
+When you find a bug in someone's code (and you're sure it's a bug, not a user error), it's polite to file a bug report. I filed one on the GitHub for LeafArea and Dr. Katabuchi responded saying that he had updated the code on the developers' version but the official CRAN. That was in 2019 so hopefully the CRAN version is up to date now too. I'm leaving these instructions here in case NIH moves another component of ImageJ and the code doesn't keep up. You can try to trace the error yourself and manually move the folder.
+
+###Okay, I've successfully used run.ij
+Great! Now write a new line into your workflow and run it.
+
+```
+str(leafdata)
+```
+
+Do you see a dataframe with three observations of two variables called "sample" and "total.leaf.area"? If you don't, return to debugging until you do. Now you can doublecheck that the software analyzed what you expected it to. The ``save.image = TRUE`` code told the software to save a copy of the image it analyzed. Navigate to the test subfolder and look for stark black and white images. Open these images and make sure that they look like what you wanted to have analyzed. 
+
+Once you're satisfied that ``run.ij`` works as you want it to, you can modify the code to run through all of your images. If all your leaves are in one folder, just point R to that folder in the ``set.directory`` part of the code. 
+
+###Help! My computer has popped up with a message saying my disk is (almost) full.
+This will happen if (like me) you don't have much space left on your hard disk or if you've been running ``run.ij`` over and over while debugging it. The longterm fix is to clean out your files to free up space. However, even then you may run into this error because LeafArea doesn't clean up temporary files well. On a Mac, the best way to prevent this error is to reboot the computer frequently, or at least every time the disk full message pops up. If you don't reboot frequently (or if you have a large number of files to analyze all at once), sometimes the disk fills up in the middle of the function and R aborts the process.
+
+If you have loads of leaves to analyze and you've broken them down by plot, species, etc., I would recommend creating a separate object for each group. This way if something goes wrong with one, you don't have to redo all of the images. So copy and paste the code for each group. Set the object to ``leafdatagroup`` and modify the filepath to point to the appropriate subfolder. Run all the groups before writing the following code into workflow.R and running it.
+```
+#Bind groups together----
+leafdata = rbind(leafdatagroup1, leafdatagroup2, leafdatagroup3)
+```
+Modify each object to reflect the names you used for your groups.
+
+#Clean your data
+Congratulations! You have successfully turned physical leaves into digital images and translated those images into numbers that can be viewed in a spreadsheet. It probably took you a long time because this is the first time you've done the process but now that the bugs are worked out, you can quickly and efficiently analyze future leaf collections. Let's take a look at your data. Use the Package Manager to install ``WriteXLS`` and add ``library(WriteXLS)`` to your #Libraries code. Load the package. Then write the following code into workflow.R and run it.
+```
+#Write Excel spreadsheet----
+WriteXLS(leafdata, "tables/leafdata.xlsx")
+```
+
+Open Excel, navigate to your 'tables' subfolder, and open your spreadsheet. How does it look? You should see two columns with one row for every leaf you analyzed.
+
+Now you need to extract the sample metadata from the sample labels. Return to R Studio and paste the following code into workflow.R
+```
+leafdataclean = cbind(leafdata, 
+                  substring(leafdata$objectid,1,3), #plot
+                  substring(leafdata$objectid, 4,7), #plant
+                  substring(leafdata$objectid, 8, 10), #replicate
+```
+You need to modify this code to reflect your own labeling system. I've set the code to work with the example I used above: 002VULP003. The first substring (characters 1 to 3) is the plot number. The second substring (characters 4 to 7) is the four letter species code. The third substring (characters 8 to 10) is the leaf replicate for that plot and species. Run the code when you have adjusted the substrings. Then run
+
+```
+head(leafdataclean)
+```
+
+Does R break your label out where you wanted it to? If no, go back and adjust your substrings. If yes, paste the following code into workflow.R
+
+```
+colnames(leafdataclean) = c("objectid", "area", "plot", "plantid", "replicate")
+```
+Remember to modify the column names to reflect how your labels are written and broken out. Once you have added the column names, run
+```
+head(leafdataclean)
+```
+How does it look? You should have your objectid (your original label), the area of each leaf, and the metadata for that leaf--which plot, species, and replicate it belongs to. Once it looks satisfactory, write a new Excel spreadsheet to save your data for sharing and manipulating.
+```
+WriteXLS(leafdataclean, "tables/leafdataclean.xlsx")
+```

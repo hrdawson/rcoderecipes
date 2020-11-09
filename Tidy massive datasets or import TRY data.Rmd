@@ -1,0 +1,107 @@
+---
+title: "How to tidy massive datasets (focus on TRY dataset)"
+author: "Hilary Rose Dawson"
+date: "11/6/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+When you download a massive dataset of multiple traits--as in from the TRY database--you will often receive a single file of untidy data. See https://r4ds.had.co.nz/tidy-data.html for a summary of different ways data can be untidy. In this case, we are dealing with example table2. TRY's data format has multiple traits stored as individual rows clustered by observation ID numbers that are unique to an individual plant.
+
+ObservationID|Trait|Measurement
+----|----|-----
+1|SLA|0.5
+1|Nmass|50
+2|SLA|0.3
+2|Nmass|40
+3|SLA|0.6
+3|Nmass|60
+
+To make things even more confusing, they have two separate identifiers: TraitID and DataID. Pay attention to these if you are using TRY data. If you have a different dataset, you can probably assume that they are interchangable.
+
+Begin by importing your data. Note that I have disallowed factors and set the file encoding language. This is important for TRY data because it is set in the MySQL default of Latin 1 Swedish while R defaults to UTF-8.
+```{r, run = FALSE}
+leslat3 = read.delim("tables/TRYshade.txt", stringsAsFactors = F, fileEncoding = "latin1")
+```
+
+Because my dataset was 4GB (of text alone!) I created a copy of the original object so that if something went wrong, I didn't have to re-import it. You can skip this if importing is no big deal.
+```{r, run = FALSE}
+leslat1 = leslat
+```
+
+To ensure accurate data processing, create two separate objects: one for measured values and one for metadata. The ObservationID field will allow you to bind these back together.
+Begin by selecting all rows that have a value for TraitName.
+```{r, run = FALSE}
+#Select traits by Trait ID----
+leslattraits = leslat1[leslat1$TraitName!="",]
+```
+
+Feed those data through a pipeline that tidies them. This pipe also allows you to remove values that aren't relevant. In my case, I removed values that have a high error risk.
+```{r, run = FALSE}
+library(dplyr)
+library(tidyr)
+
+leslattraits = leslattraits %>% #Select dataset
+  group_by(ObservationID, TraitID)%>% #Combine multiple observations for each individual
+  mutate(MeanValue = mean(StdValue)) %>%
+  filter(ErrorRisk < 4)%>% #Filter out strong error risks
+  filter(OrigObsDataID %in% NA)%>% #Filter out duplicates
+  select(ObservationID, TraitID, MeanValue)%>% #Select the columns in the final object
+  distinct()%>% #Remove duplicates
+  pivot_wider(names_from = TraitID, values_from = MeanValue) #Pivot by TraitID
+```
+Since TraitID isn't human readable, you will need to translate those numbers into relevant trait names.
+```{r, run = FALSE}
+#Rename traits data based on human readable names
+dataIDs = distinct(leslat1[, c(10,11)]) #Translation key of number to name
+View(dataIDs)
+
+TraitIDs = colnames(leslattraits) #Store number-based column names
+colnames(leslattraits) = TraitIDs #Change colnames to TraitID numbers
+#Change colnames to human readable names
+colnames(leslattraits) = c("obsID", "Nmass", "Pmass", "SLA1", "Amass", "LL",
+                           "SLA2", "SLA3", "Rmass", "SLA4")
+```
+
+Now repeat with relevant metadata. Again, you can filter out undesirable observations. In my case, I removed experimental values and observations that didn't have latitude.
+```{r, run = FALSE}
+#Select metadata based on DataIDs----
+leslatmeta = leslat1 %>% #Select dataset
+  filter(DataID != 308)%>% #Filter out experimental values
+  select(ObservationID, DataID, OrigValueStr, AccSpeciesName)%>% #Select the columns in the final object
+  filter(DataID %in% c(59:62, 80, 84, 236, 208, 308, 413))%>% #Choose which DataIDs to include
+  distinct()%>% #Remove duplicate observations
+  pivot_wider(names_from = DataID, values_from = OrigValueStr)%>% #Pivot by DataID
+  filter(!is.na(`59`)) #Remove observations without latitude
+```
+
+Next, give the metadata human readable column names. Remember that the ObservationID column name must match with the trait object's ObservationID column name.
+
+```{r, run = FALSE}
+#Rename columns
+dataIDs = distinct(leslat1[, c(11,12)]) #Translation key of number to name
+View(dataIDs)
+MetaIDs = colnames(leslatmeta) #Store number-based column names
+colnames(leslatmeta) = MetaIDs #Change colnames to MetaID numbers
+#Change colnames to human readable names
+colnames(leslatmeta) = c("obsID", "species","soil", "lat", "lon", "MAT", "MAP",
+                         "alt", "status", "shade", "VPD")
+```
+Now you are ready to merge your trait data and metadata back together. One trick here is to keep out observations that were excluded in the previous steps. The key for this are the ```all.x``` and ```all.y``` arguments.
+```{r, run = FALSE}
+#Merge the two together ----
+leslat2 = merge(leslattraits, #Traits object
+                leslatmeta, #Metadata object
+                by = "obsID", #Observation ID code that links the two together
+                all.x = F, #Allow rows missing data to be dropped
+                all.y = F)
+```
+
+You should now have a clean and tidy dataset ready for use! Inspect it to ensure all is well.
+```{r, run = FALSE}
+str(leslat2)
+head(leslat2)
+View(leslat2)
+```

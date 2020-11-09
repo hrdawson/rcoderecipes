@@ -1,0 +1,106 @@
+---
+title: "How to extract vascular plant phylogenetic data in R"
+author: "Hilary Rose Dawson"
+date: "4/14/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+A wide array of R packages exist for analyzing and modifying phylogenies. However, these packages all assume that you have genetic data to create a tree or already have a tree made. V.PhyloMaker is one of the few packages that allows you to create a phylogeny with branch distances based on molecular data. Complete these steps before continuing on to the more advanced _ape_ and _caper_ packages.
+For more information on using V.PhyloMaker, please refer to *Jin, Y. and Qian, H. 2019. V.PhyloMaker: an R package that can generate very large phylogenies for vascular plants. – Ecography 42: 1353–1359.*
+
+## Preparation
+You will need to install _phytools_ and _V.PhyloMaker_ to complete this project. To install _V.PhyloMaker_, first install and mount the _devtools_ package then direct your console to
+`devtools::install_github("jinyizju/V.PhyloMaker")`.
+
+Mount packages.
+```{r, eval = FALSE}
+library(phytools)
+library(V.PhyloMaker)
+```
+```{r, echo = FALSE}
+library(phytools)
+library(V.PhyloMaker)
+```
+
+## Data formatting
+Most phylogenies are constructed by comparing similarities in certain locations in DNA. However, we now have extremely large pre-constructed phylogenies called mega-trees available created from other researchers' DNA data. One such mega-tree is stored in V.PhyloMaker--this tree is a compilation of Zanne et al (2014) and Smith and Brown's (2018) mega-trees.
+First, create a list of your focal species. This can be formatted in a CSV or created as a dataframe in R. 
+Your list should have three columns filled out for each species: species, genus, and family. Reference names against theplantlist.org to ensure correct matches in V.PhyloMaker. Note that theplantlist.org is run by Kew Science and has some British name differences, especially in family. It is worth checking all your names and families even if you're familiar with them.
+```{r, eval = FALSE}
+species = c("Elymus repens", "Bromus hordeaceus", "Bromus diandrus", "Koeleria macrantha","Agrostis capillaris", "Holcus lanatus", "Alopecurus pratensis", "Festuca arundinacea",
+"Veronica arvensis", "Eriophyllum lanatum", "Daucus carota", "Sidalcea malviflora", "Aphanes occidentalis", "Hypericum perforatum", "Lotus corniculatus", "Vicia sativa", "Trifolium subterraneum")
+genus = c("Elymus","Bromus","Bromus","Koeleria","Agrostis","Holcus","Alopecurus","Festuca",
+          "Veronica","Eriophyllum","Daucus","Sidalcea","Aphanes","Hypericum","Lotus","Vicia","Trifolium")
+family = c("Poaceae", "Poaceae", "Poaceae", "Poaceae", "Poaceae", "Poaceae", "Poaceae", "Poaceae", "Plantaginaceae", "Asteraceae", "Apiaceae", "Malvaceae", "Rosaceae", "Hypericaceae","Fabaceae", "Fabaceae","Fabaceae")
+dat = data.frame(species, genus, family)
+colnames(dat) = c("species", "genus", "family")
+```
+```{r, echo = FALSE}
+species = c("Elymus repens", "Bromus hordeaceus", "Bromus diandrus", "Koeleria macrantha","Agrostis capillaris", "Holcus lanatus", "Alopecurus pratensis", "Festuca arundinacea",
+"Veronica arvensis", "Eriophyllum lanatum", "Daucus carota", "Sidalcea malviflora", "Aphanes occidentalis", "Hypericum perforatum", "Lotus corniculatus", "Vicia sativa", "Trifolium subterraneum")
+genus = c("Elymus","Bromus","Bromus","Koeleria","Agrostis","Holcus","Alopecurus","Festuca",
+          "Veronica","Eriophyllum","Daucus","Sidalcea","Aphanes","Hypericum","Lotus","Vicia","Trifolium")
+family = c("Poaceae", "Poaceae", "Poaceae", "Poaceae", "Poaceae", "Poaceae", "Poaceae", "Poaceae", "Plantaginaceae", "Asteraceae", "Apiaceae", "Malvaceae", "Rosaceae", "Hypericaceae","Fabaceae", "Fabaceae","Fabaceae")
+dat = data.frame(species, genus, family)
+colnames(dat) = c("species", "genus", "family")
+```
+Your resulting species list should look like this.
+```{r}
+head(dat)
+```
+
+## Prune the tree
+V.PhyloMaker has an impressively large mega-tree with 74,533 vascular plant species. You probably only need a handful of these. Jin and Qian have written a package to prune the tree down to just the species you need. To examine this function, type `??phylo.maker` into your console. 
+To extract the tree, use this code. Expect the process to take some time depending on how many species you have.
+```{r, eval = FALSE}
+tree = phylo.maker(sp.list = dat, #specify your species list
+                   tree = GBOTB.extended, #GBOTB.extended is the most comprehensive tree offered by V.PhyloMaker
+                   nodes = nodes.info.1, #this changes how polyphyletic species are handled
+                   scenarios = "S3" #this changes how new genera are added
+                   )
+```
+```{r, echo = FALSE}
+tree = phylo.maker(sp.list = dat, #specify your species list
+                   tree = GBOTB.extended, #GBOTB.extended is the most comprehensive tree offered by V.PhyloMaker
+                   nodes = nodes.info.1, #this changes how polyphyletic species are handled
+                   scenarios = "S3" #this changes how new genera are added
+                   )
+```
+The object tree has two sub-objects, only one of which is useful in other phylogeny packages.
+```{r}
+str(tree)
+```
+To make these data usable, reassign this to a new object.
+```{r, eval = FALSE}
+phy = tree$scenario.3 #Replace the '3' with whichever scenario number you use
+```
+```{r, echo = FALSE}
+phy = tree$scenario.3 #Replace the '3' with whichever scenario number you use
+```
+## View your phylogenetic tree
+The package _phytools_ will show you your phylogenetic tree.
+```{r}
+plotTree(phy)
+```
+
+## Export your phylogenetic tree
+You may want to use your phylogenetic tree in other programs. The most universal way to do this is to save it as a .tre, a file that can be read in any text editor as well as specialized phylogenetic software.
+```{r, eval = FALSE}
+write.tree(phy, #choose the object you want to write
+           "tables/tree.tre") #choose where you want to save your tree. Remember to use the .tre extension
+```
+
+When you open your tree, you will see that the data are all there but difficult to read. (If you have a Mac, opening the .tre file may bring up an error message. Right click on the file and select Open with>TextEdit to open the file.)
+
+```{r, eval = FALSE}
+((((Eriophyllum_lanatum:93.730212,Daucus_carota:93.730212):13.011199,Veronica_arvensis:106.74141):16.992826,(((((Trifolium_subterraneum:18.559242,Vicia_sativa:18.559242):30.867279,Lotus_corniculatus:49.426521):63.274675,Aphanes_occidentalis:112.701195):3.084369,Hypericum_perforatum:115.785565):2.793039,(Sidalcea_malviflora:116.993195,Geranium_dissectum:116.993196):1.585408):5.155633):12.023828,((((Festuca_arundinacea:12.698959,Holcus_lanatus:12.69896):0.559832,Alopecurus_pratensis:13.258792):3.634498,(Agrostis_capillaris:13.16132,Koeleria_macrantha:13.16132):3.73197):2.636326,(Elymus_repens:10.440369,(Bromus_hordeaceus:4.239125,Bromus_diandrus:4.239125):6.201244):9.089247):116.228449);
+```
+
+You can import them back into R using the read.tree function.
+```{r, eval = FALSE}
+phy = read.tree("tables/tree.tre")
