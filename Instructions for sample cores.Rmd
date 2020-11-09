@@ -1,0 +1,148 @@
+---
+title: "Instructions for analyzing tree cores:sample cores"
+author: "Hilary Rose Dawson"
+date: "6/24/2020"
+output: word_document
+---
+
+# You will need
+* ImageJ (https://imagej.nih.gov/ij/download.html)
+* R (https://cran.r-project.org/)
+* R Studio (https://rstudio.com/products/rstudio/download/)
+
+# Prepare images for processing
+I've already created and set up this project for you--this section will be more detailed for your actual protocol but right now I want to make sure you can successfully measure rings in R. Simply notice that within your project folder *samplecores*, there are four subfolders, *tables*, *scripts*, *write*, and *cores*. Although these instructions are largely plug and play, I encourage you to rewrite them into the workflow script for yourself--cutting and pasting is good for large chunks of code but will not help you understand what is going on.
+
+First, we're going to prepare the image for analysis. I've downloaded a sample image from Jacquin et al. 2019 Comput Electron Agr but it needs splitting into individual cores. (When it comes to your own cores, you will also manipulate the image in R to crop it to the core itself.) Start by opening the **samplecores** project in R Studio. Go to Tools>Install Packages and type in *magick*. Magick is a great package for anyone who works with images and I encourage you to read the ROpenSci tutorial at some point here: https://ropensci.org/tutorials/magick_tutorial/ For good measure, you should also install the *WriteXLS* function. We'll use it later.
+
+Open a new script (white square with green circle in upper left) and save it as "workflow.R" in "scripts." Write in your working directory, directing it to the *samplecores* folder.
+
+```{r}
+setwd("/Volumes/HILARYROSE/SPA/samplecores")
+```
+The filepath will be slightly different for you than on my USB drive. If you look just below the Files tab on the right of the R Studio console, you'll see the filepath to *samplecores* on your computer. Just put a */* for every *>*. Don't forget the initial */*.
+
+Next, you need to load *magick* using the ``library()`` function. Type this into your workflow script.
+
+```{r results = "hide"}
+#Load package
+library(magick)
+```
+
+Open a new script and save it as "cleancore.R". Paste (don't try to type)
+```{r}
+cleancore = function(folderpath,dimensions){ 
+  list<-list.files(folderpath, pattern="*.tif") 
+  name = NULL
+  cropped = NULL
+  grayed = NULL
+  for (i in list) {
+    name = paste("write/", list(i), sep = "") 
+    filepath = paste(folderpath, list(i), sep = "")
+    core = image_read(filepath)
+    cropped = image_crop(core, dimensions) 
+    #Change these distances to match your cores: 
+    #width xheight + offset from left corner +offset from upper corner
+    #Change this angle depending on how your cores are scanned
+    grayed = image_quantize(cropped, colorspace = 'gray')
+    image_write(grayed, path = name, format = "tiff")}
+}
+```
+
+```{r}
+cleancore = function(folderpath,dimensions){ 
+  list<-list.files(folderpath, pattern="*.png") 
+  name = NULL
+  cropped = NULL
+  for (i in list) {
+    name = paste("write/", list(i), sep = "") 
+    filepath = paste(folderpath, list(i), sep = "")
+    core = image_read(filepath)
+    cropped = image_crop(core, dimensions) 
+    #Change these distances to match your cores: 
+    #width xheight + offset from left corner +offset from upper corner
+    #Change this angle depending on how your cores are scanned
+    image_write(cropped, path = name, format = "png")}
+}
+```
+This is a complicated bit of code that creates a new function (``cleancore()``) that will help you clean your core. Place your cursor in the first line and run the code (cmd+enter, or the run button). You will need to reload this function every time you restart R.
+
+Return to your main script. Write and run
+```{r}
+cleancore("cores/", "2092x52+964+880", ".png") #Use the cleancore function on core image folder
+```
+
+Once R has completed this process, open up the "write" subfolder and check that you now have a core image saved there. Right click on the image and rename it "core3.tiff". Once you've verified this, you need to modify the script to cut other cores out of that initial image. 
+
+# ImageJ measuring
+To cut other cores out of that initial image, you need to know how to tell the computer where they are. Open the image from Jacquin et al. in ImageJ. On a piece of paper (or digital paper), make a quick table of the cores you want to crop out--I wrote the code for #03 and you want to also extract #7, #8, and #11. 
+
+Core no.|width|height|left offset|upper offset
+--------|-----|------|-----------|------------
+3       |690  |60    |1278       |327
+7       |     |      |           |
+8       |     |      |           |
+11      |     |      |           |
+
+Now you need to fill in the rest of the table. For width, click the line tool (fifth button from left). Draw a line across core #7, holding down the shift key to keep the line straight. Then cmd+m (or Analyze>Measure) should pull up a new window with the length (you may need to expand the window to show the whole thing). Click back into the image and repeat for cores #8 and #11. 
+
+For the offset, click your cursor on the upper left corner of core #7. Hold down shift and click on the far left edge of the image. Press cmd+m. Click on the upper left corner of core #7 again, hold down shift, and bring the cursor to the upper edge of the image. Press cmd+m. Record the first value under *left offset* and the second value under *upper offset*. Repeat for the other cores. Return to R Studio with your paper table of coordinates.
+
+# Crop out the cores
+In your workflow script, write the previous again with your own values replacing the ones from core #3. Use the values for core #7.
+```{r eval = F}
+cleancore("cores/", "width x height + left + upper offset") 
+```
+Run the function and then look in the *write* folder. Is core #7 there? Does it look like the whole core was cropped out? If it's missing chunks or is offset, go back to ImageJ and repeat your measurements or guesstimate how much it needs to move. Remember that you're measuring in pixels which are rather small. Once you're satisfied with the image, rename it "core7.tiff". Repeat with the measurements for cores #8 and #11.
+
+Open core #3 in ImageJ and adjust the contrast until the rings are clearly visible (Image > Adjust > Contrast / Brightness). Save the image and close. Repeat with all other cores. 
+
+# Measure and count rings
+This step isn't as automated as I'd like it to be--technically, you should write a function that applies the measuRing package to each image and records the results. However, all my attempts at such a function have failed. We're just going to be thankful that this is more precise and less timeconsuming than manually counting, even if it's not full automated.
+
+Return to R Studio and your workflow script. Install the "measuRing" package. 
+
+Once you're done, open up R (**not** R Studio, but actual R) and open your workflow.R script next to the console. The next steps don't work well in R Studio. (Is your workflow.R script blank in R? Save it in Studio and try reopening it in R.) Write and run
+
+```{r}
+#Load ring measuring package
+library(measuRing)
+```
+
+Write the code below into your workflow script, modifying it to reflect the path to your folders instead of mine. Run it. With luck, a graphics window will pop up that shows you core #3 with all the rings demarcated.
+
+```{r eval = F}
+#Count and measure rings
+core3 = ringDetect("/Volumes/HILARYROSE/SPA/samplecores/write/allcores1.png")
+```
+
+If that worked, you now have an object ("core3") that is fairly complex. Run ``str(core3)`` to examine it.
+
+If your core was clear and clean with good contrast, you now have some accurate data. ``core3$ringWidths`` has the width of each year's growth, which incidentally tells you how old the tree is (presuming you found the pith). However, it's likely that if you inspect the plot, you'll see falsely counted and missed rings. Fortunately, measuRing accounts for these too.
+
+## Adding missing rings
+Write in to your workflow script
+```{r eval = F}
+Toinc <- ringSelect(core3)
+```
+and run it. Your graphics window is now interactive. With your cursor, left click on all the rings that R missed in core #3 (if it didn't miss any, invent one for the sake of learning). When you're finished, right click on the plot to exit the function. Write into your workflow script
+```{r eval = F}
+core3a <- update(core3, inclu = Toinc)
+```
+Your plot should update with the "missing" rings. Now write
+```{r eval = F}
+Toexc <- ringSelect(core3a, any.col = FALSE)
+```
+Again, the graphics window is interactive. Left click on any rings that were falsely counted. When you're finished, right click to exit the interactive portion. Write
+```{r eval = F}
+core3b <- update(core3a, exclu = Toexc) 
+```
+All of your rings should now be appropriately labeled in the plot and counted in the ``core3b`` object. Let's look at the data in Excel. Save your data to Excel by loading the *WriteXLS* package and writing the spreadsheet.
+```{r eval = F}
+library(WriteXLS)
+
+WriteXLS(core3b$ringWidths, "tables/core3b.xlsx")
+```
+You'll notice that the object (core3b) was followed by a dollar sign and *ringWidths*. This is because *core3b* is a complex object with multiple layers. By telling R *$ringWidths*, you specified that you wanted the widths portion of the complex object.
+
+Once you run that, look in the *tables* folder for your new spreadsheet. Open it up in Excel to see what the values are. This is how you can move the data back into R Studio--but that's another lesson! For now, return to R and repeat the analysis and data export with the other three cores to make sure you can modify and run the script well.
