@@ -1,5 +1,5 @@
 ---
-title: "LeafScan"
+title: "How to measure specific leaf area"
 author: "Hilary Rose Dawson"
 date: "5/30/2020"
 output: word_document
