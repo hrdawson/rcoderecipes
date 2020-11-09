@@ -1,5 +1,5 @@
 ---
-title: "How to tidy massive datasets (focus on TRY dataset)"
+title: "How to tidy a dataset from TRY-db.org; or how to tidy massive data"
 author: "Hilary Rose Dawson"
 date: "11/6/2020"
 output: word_document
