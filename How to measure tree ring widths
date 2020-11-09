@@ -49,22 +49,6 @@ cleancore = function(folderpath,dimensions){
 }
 ```
 
-```{r}
-cleancore = function(folderpath,dimensions){ 
-  list<-list.files(folderpath, pattern="*.png") 
-  name = NULL
-  cropped = NULL
-  for (i in list) {
-    name = paste("write/", list(i), sep = "") 
-    filepath = paste(folderpath, list(i), sep = "")
-    core = image_read(filepath)
-    cropped = image_crop(core, dimensions) 
-    #Change these distances to match your cores: 
-    #width xheight + offset from left corner +offset from upper corner
-    #Change this angle depending on how your cores are scanned
-    image_write(cropped, path = name, format = "png")}
-}
-```
 This is a complicated bit of code that creates a new function (``cleancore()``) that will help you clean your core. Place your cursor in the first line and run the code (cmd+enter, or the run button). You will need to reload this function every time you restart R.
 
 Return to your main script. Write and run
