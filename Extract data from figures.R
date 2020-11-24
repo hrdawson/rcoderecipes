@@ -1,3 +1,4 @@
+#You can now watch a video on how to metaDigitise: https://vimeo.com/manage/483279690
 #Load packages
 library(metaDigitise)
 library(WriteXLS)
