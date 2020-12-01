@@ -1,0 +1,55 @@
+---
+title: "List of coordinates to KML file"
+author: "Hilary Rose Dawson"
+date: "12/1/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#How to turn a list of coordinates into a KML file for Google Earth
+This code is adapted from Ryan Peek's tutorial on `.gpkg` files in R. Check it out for extra spatial data information: https://ryanpeek.org/mapping-in-R-workshop/02_import_export_gpkg.html#Using_geopackage
+Hattip to Christine Parisek for showing me that resource!
+
+##Format your data
+Create a dataframe with three columns: site name, latitude, and longitude. You can import this from a CSV or Excel file. 
+
+sitename | latitude | longitude
+---|---|---
+a | 44.0 | -100.0
+b | 42.0 | -101.0
+c | 43.0 | -102.0
+
+```{r}
+data = read.csv(table.csv)
+```
+
+Now tell R how to read the spatial data. Use `coords` to indicate the x and y coordinates and CRS number to specify the coordinate reference system. Hint: if your CRS (or datum) is in words, search the internet for "[datum] ESPG code". 
+
+```{r}
+library(dplyr)
+library(sf)
+spatial = data%>%
+  st_as_sf(coords=c("longitude", "latitude"), #Assign coordinate variables
+           crs=4269, #Assign coordinate reference system
+           remove=FALSE)
+```
+
+Check that your spatial data looks correct.
+```{r}
+st_crs(spatial)
+```
+
+Check that your data look right on a map.
+```{r}
+library(mapview)
+mapview(spatial)
+```
+
+Finally, export your data to a KML.
+```{r}
+st_write(spatial, 
+         "fia.kml", #Note the .kml ending
+         layer = "FIAPlots") #Name your GIS layer
