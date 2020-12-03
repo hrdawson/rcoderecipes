@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = TRUE)
 This code is adapted from Ryan Peek's tutorial on `.gpkg` files in R. Check it out for extra spatial data information: https://ryanpeek.org/mapping-in-R-workshop/02_import_export_gpkg.html#Using_geopackage
 Hattip to Christine Parisek for showing me that resource!
 
+You can now watch these instructions as a video: https://vimeo.com/486907354
+
 ##Format your data
 Create a dataframe with three columns: site name, latitude, and longitude. You can import this from a CSV or Excel file. 
 
