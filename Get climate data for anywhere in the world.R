@@ -88,4 +88,4 @@ clim.meta = points %>%
   unite(lat_lon, c("lat", "lon"))%>%
   inner_join(prec)%>%
   inner_join(tavg)%>%
-  inner_join(elev))
+  inner_join(elev)
