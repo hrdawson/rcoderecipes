@@ -5,6 +5,10 @@
 ##Run the function separately for each climate variable (precip, Tavg, etc.).
 ##Use the join functions from dplyr to combine into one climate data set.
 
+##This works with soil data too! Check out https://casoilresource.lawr.ucdavis.edu/soil-properties/download.php
+##Note that these are old rasters that need to be exported as GeoTIFs for R to read them.
+##QGIS Save As function works great for this.
+
 #You will need:
 ##folderpath: folder address of downloaded worldclim data
 ####eg "worldclim/tavg"
