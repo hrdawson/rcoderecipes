@@ -41,11 +41,11 @@ extract.clim = function(folderpath, points) {
   data = raster::extract(alldata, points)
   #Calculate statistics
   datasum = data %>%
-    melt()%>%
-    pivot_wider(names_from = X2, values_from = value)%>%
-    bind_cols(as.data.frame(points))%>%
-    mutate(total = rowSums(across(where(is.numeric))),
-           mean = rowMeans(across(where(is.numeric))))
+    melt() %>%
+    group_by(X1) %>%
+    summarize(total = sum(value),
+              mean = mean(value)) %>%
+    left_join(as.data.frame(points) %>% mutate(X1 = row_number()))
   
 }
 
