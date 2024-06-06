@@ -35,7 +35,7 @@ extract.clim = function(folderpath, points) {
   files <- dir(folderpath, pattern = "*.tif") 
   #Combine rasters into a rasterStack
   alldata <- files%>%
-    map(~ raster(file.path(folderpath, .))) %>% 
+    purrr::map(~ raster(file.path(folderpath, .))) %>% 
     reduce(stack)
   #extract raster data for each point
   data = raster::extract(alldata, points)
@@ -56,7 +56,7 @@ basic.clim = function(folderpath, points) {
   files <- dir(folderpath, pattern = "*.tif") 
   #Combine rasters into a rasterStack
   alldata <- files%>%
-    map(~ raster(file.path(folderpath, .))) %>% 
+    purrr::map(~ raster(file.path(folderpath, .))) %>% 
     reduce(stack)
   #extract raster data for each point
   data = alldata %>%
@@ -72,19 +72,19 @@ prec = extract.clim("datasets/worldclim/precip/", points)%>%
   unite(lat_lon, c("lat", "lon"))%>%
   #Select just the relevant columns
   ##notice that precip. uses total, not mean
-  select(total, lat_lon)%>%
+  dplyr::select(total, lat_lon)%>%
   #Rename so you know total what
   dplyr::rename(tot.prec = total)
 
 tavg = extract.clim("datasets/worldclim/tavg/", points)%>%
   unite(lat_lon, c("lat", "lon"))%>%
   ##Notice that Tavg uses mean, not total
-  select(mean, lat_lon)%>%
+  dplyr::select(mean, lat_lon)%>%
   dplyr::rename(tavg = mean)
 
 elev = basic.clim("datasets/worldclim/elev/", points)%>%
   unite(lat_lon, c("lat", "lon"))%>%
-  rename(elev = value)
+  dplyr::rename(elev = value)
 
 #Once extracted, you can combine all the data into one metadata object.
 clim.meta = points %>%
