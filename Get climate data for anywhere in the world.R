@@ -65,6 +65,29 @@ basic.clim = function(folderpath, points) {
     bind_cols(as.data.frame(points))
 }
 
+bio.clim = function(folderpath, points) {
+  #Read rasters
+  files <- dir(folderpath, pattern = "*.tif")
+  #Combine rasters into a rasterStack
+  alldata <- files%>%
+    purrr::map(~ raster(file.path(folderpath, .))) %>%
+    reduce(stack)
+  #extract raster data for each point
+  data = raster::extract(alldata, points) |>
+    bind_cols(as.data.frame(points)) |>
+    as.data.frame() |>
+    # Rename the variables
+    # See https://worldclim.org/data/bioclim.html for key
+    dplyr::rename(temp.mean = wc2.1_30s_bio_1, diurnal.range.mean = wc2.1_30s_bio_2, isotherm = wc2.1_30s_bio_3,
+                  temp.seasonality = wc2.1_30s_bio_4, temp.warm.m.mean = wc2.1_30s_bio_5, temp.cold.m.mean = wc2.1_30s_bio_6,
+                  temp.range = wc2.1_30s_bio_7, temp.wet.q.mean = wc2.1_30s_bio_8, temp.dry.q.mean = wc2.1_30s_bio_9,
+                  temp.warm.q.mean = wc2.1_30s_bio_10, temp.cold.q.mean = wc2.1_30s_bio_11, precip = wc2.1_30s_bio_12,
+                  precip.wet.m.mean = wc2.1_30s_bio_13, precip.dry.m.mean = wc2.1_30s_bio_14,
+                  precip.seasonality = wc2.1_30s_bio_15, precip.wet.q.mean = wc2.1_30s_bio_16, precip.dry.q.mean = wc2.1_30s_bio_17,
+                  precip.warm.q.mean = wc2.1_30s_bio_18, precip.cold.q.mean = wc2.1_30s_bio_19
+                  )
+}
+
 #Then use the functions as if they came in a CRAN package
 #Examples:
 prec = extract.clim("datasets/worldclim/precip/", points)%>%
@@ -86,10 +109,14 @@ elev = basic.clim("datasets/worldclim/elev/", points)%>%
   unite(lat_lon, c("lat", "lon"))%>%
   dplyr::rename(elev = value)
 
+ANUCLIM = bio.clim("raw_data/datasets/worldclim/ANUCLIM/", points) |>
+  unite(lat_lon, c("lat", "lon"))
+
 #Once extracted, you can combine all the data into one metadata object.
 clim.meta = points %>%
   as.data.frame()%>%
   unite(lat_lon, c("lat", "lon"))%>%
   inner_join(prec)%>%
   inner_join(tavg)%>%
-  inner_join(elev)
+  inner_join(elev) |>
+  inner_join(ANUCLIM)
